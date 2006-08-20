@@ -6,7 +6,7 @@ use warnings;
 use Device::USB;
 #use Data::Dumper;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 our $timeout = 1000;
 
 sub new {
@@ -29,6 +29,7 @@ sub do {
   my $command = shift;
 
   my $command_string = {};
+
   my $command_fill = join ('', map { chr $_ } ( 8,  8,
 						0,  0,  0,  0,  0,  0,  0,  0,
 						0,  0,  0,  0,  0,  0,  0,  0,
@@ -37,6 +38,8 @@ sub do {
 						0,  0,  0,  0,  0,  0,  0,  0,
 						0,  0,  0,  0,  0,  0,  0,  0,
 						0,  0,  0,  0,  0,  0,  0,  0)); # 58 bytes
+
+  # command_string entries are 6 + 58 (64) bytes long.
   $command_string->{stop}          = join('', map { chr $_ } ( 0,  0,  0,  0,  0,  0)).$command_fill;
   $command_string->{left}          = join('', map { chr $_ } ( 0,  1,  0,  0,  0,  0)).$command_fill;
   $command_string->{right}         = join('', map { chr $_ } ( 0,  0,  1,  0,  0,  0)).$command_fill;
@@ -49,7 +52,14 @@ sub do {
   $command_string->{fire}          = join('', map { chr $_ } ( 0,  0,  0,  0,  0,  1)).$command_fill;
 
   return -1 unless exists $command_string->{$command};
+  #print STDERR $command,"\n";
+  
+
   $self->{dev}->control_msg(0x21,9,0x2,0x0,$command_string->{$command},64,$timeout);
+  sleep 1;
+  $self->{dev}->control_msg(0x21,9,0x2,0x0,$command_string->{'stop'},64,$timeout);
+
+
 }
 
 1;
@@ -57,6 +67,11 @@ sub do {
 =head1 NAME
 
 Device::USB::MissileLauncher - interface to toy USB missile launchers
+
+=head1 NOTICE
+
+THIS VERSION AND v0.01 ARE BUGGY, YOU CAN ONLY FIRE THE MISSILES, NOT
+MOVE THE LAUNCHER.
 
 =head1 SYNOPSIS
 
@@ -83,6 +98,13 @@ It has two methods - new() and do(). do() takes a string out of the following li
   leftdown
   rightdown
   fire
+
+=head1 THANKS
+
+Ian Jeffray published some C code to work with the Missile Launcher at 
+http://ian.jeffray.co.uk/linux/ and Scott Weston published some Python
+code at http://scott.weston.id.au/software/pymissile-20060126/ , both
+sets of code helped a lot when I was working out how to control the toy.
 
 =head1 AUTHOR
 
