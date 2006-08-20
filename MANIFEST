@@ -1,0 +1,6 @@
+MANIFEST
+Makefile.PL
+t/Device-USB-MissileLauncher.t
+lib/Device/USB/MissileLauncher.pm
+
+META.yml                                 Module meta-data (added by MakeMaker)
