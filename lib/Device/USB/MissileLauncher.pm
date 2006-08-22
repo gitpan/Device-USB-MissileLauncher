@@ -1,3 +1,4 @@
+
 package Device::USB::MissileLauncher;
 
 use strict;
@@ -6,21 +7,26 @@ use warnings;
 use Device::USB;
 #use Data::Dumper;
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 our $timeout = 1000;
 
 sub new {
   my $class = shift;
-  my $inita = join ('', map { chr $_ } (85, 83, 66, 67,  0,  0,  4,  0)); # 8 bytes
-  my $initb = join ('', map { chr $_ } (85, 83, 66, 67,  0, 64,  2,  0));
   my $usb = Device::USB->new();
   my $dev = $usb->find_device(0x1130,0x0202);
+  #my $inita = join ('', map { chr $_ } (85, 83, 66, 67,  0,  0,  4,  0)); # 8 bytes
+  #my $initb = join ('', map { chr $_ } (85, 83, 66, 67,  0, 64,  2,  0));
   $dev->open() || die "$!";
   $dev->set_configuration(1);
   $dev->claim_interface(0);
   $dev->claim_interface(1);
   my $self = {};
   $self->{dev} = $dev;
+  #$self->{dev}->control_msg(0x21,9,0x2,0x01,$inita,8,$timeout);
+  #sleep 1;
+  #$self->{dev}->control_msg(0x21,9,0x2,0x01,$initb,8,$timeout);
+  #sleep 1;
+  #print STDERR "ok\n";
   return bless $self, $class;
 }
 
@@ -29,6 +35,10 @@ sub do {
   my $command = shift;
 
   my $command_string = {};
+
+  my $inita = join ('', map { chr $_ } (85, 83, 66, 67,  0,  0,  4,  0)); # 8 bytes
+  my $initb = join ('', map { chr $_ } (85, 83, 66, 67,  0, 64,  2,  0));
+
 
   my $command_fill = join ('', map { chr $_ } ( 8,  8,
 						0,  0,  0,  0,  0,  0,  0,  0,
@@ -53,13 +63,13 @@ sub do {
 
   return -1 unless exists $command_string->{$command};
   #print STDERR $command,"\n";
-  
+
+  $self->{dev}->control_msg(0x21,9,0x2,0x01,$inita,8,$timeout);
+  sleep 1;
+  $self->{dev}->control_msg(0x21,9,0x2,0x01,$initb,8,$timeout);
+  sleep 1;
 
   $self->{dev}->control_msg(0x21,9,0x2,0x0,$command_string->{$command},64,$timeout);
-  sleep 1;
-  $self->{dev}->control_msg(0x21,9,0x2,0x0,$command_string->{'stop'},64,$timeout);
-
-
 }
 
 1;
@@ -67,11 +77,6 @@ sub do {
 =head1 NAME
 
 Device::USB::MissileLauncher - interface to toy USB missile launchers
-
-=head1 NOTICE
-
-THIS VERSION AND v0.01 ARE BUGGY, YOU CAN ONLY FIRE THE MISSILES, NOT
-MOVE THE LAUNCHER.
 
 =head1 SYNOPSIS
 
@@ -105,6 +110,9 @@ Ian Jeffray published some C code to work with the Missile Launcher at
 http://ian.jeffray.co.uk/linux/ and Scott Weston published some Python
 code at http://scott.weston.id.au/software/pymissile-20060126/ , both
 sets of code helped a lot when I was working out how to control the toy.
+
+Jonathan Stowe also helped with the debugging to get v0.03 out, he spotted
+the C code sending the init strings everytime.
 
 =head1 AUTHOR
 
